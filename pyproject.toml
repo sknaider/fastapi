@@ -98,6 +98,24 @@ standard-no-fastapi-cloud-cli = [
     # "pydantic-extra-types >=2.0.0",
 ]
 
+enterprise = [
+    # Metrics collection
+    "prometheus-client >=0.19.0",
+    # Distributed tracing
+    "opentelemetry-api >=1.20.0",
+    "opentelemetry-sdk >=1.20.0",
+    "opentelemetry-exporter-jaeger >=1.20.0",
+    "opentelemetry-exporter-otlp >=1.20.0",
+    # Error tracking
+    "sentry-sdk >=1.40.0",
+    # Redis support for caching and rate limiting
+    "redis >=5.0.0",
+    # Async Redis
+    "redis[hiredis] >=5.0.0",
+    # Performance testing
+    "locust >=2.15.0",
+]
+
 all = [
     "fastapi-cli[standard] >=0.0.8",
     # # For the test client

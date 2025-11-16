@@ -11,6 +11,11 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "daily"
     commit-message:
       prefix: ⬆
+    # Enable security updates
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"

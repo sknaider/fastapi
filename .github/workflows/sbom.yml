@@ -1,0 +1,64 @@
+name: SBOM Generation
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+  schedule:
+    # Weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  generate-sbom:
+    name: Generate Software Bill of Materials
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install cyclonedx-bom
+      run: pip install cyclonedx-bom
+
+    - name: Install FastAPI dependencies
+      run: pip install -e ".[all]"
+
+    - name: Generate SBOM (CycloneDX JSON)
+      run: |
+        cyclonedx-py environment -o sbom.json
+
+    - name: Generate SBOM (CycloneDX XML)
+      run: |
+        cyclonedx-py environment -o sbom.xml -F xml
+
+    - name: Generate SBOM (SPDX)
+      run: |
+        pip install spdx-tools
+        # Create basic SPDX document
+        python scripts/generate_spdx_sbom.py
+
+    - name: Upload SBOM artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-${{ github.sha }}
+        path: |
+          sbom.json
+          sbom.xml
+          sbom.spdx
+        retention-days: 90
+
+    - name: Attach SBOM to release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          sbom.json
+          sbom.xml
+          sbom.spdx
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

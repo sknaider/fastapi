@@ -1,0 +1,65 @@
+name: Check Lock Files
+
+on:
+  pull_request:
+    paths:
+      - 'pyproject.toml'
+      - 'requirements*.lock'
+  push:
+    branches: [master]
+    paths:
+      - 'pyproject.toml'
+      - 'requirements*.lock'
+
+jobs:
+  check-lockfiles:
+    name: Verify Lock Files Are Up-to-Date
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      run: pip install uv
+
+    - name: Generate lock files
+      run: |
+        uv pip compile pyproject.toml -o requirements-new.lock --quiet
+        uv pip compile pyproject.toml --extra all -o requirements-all-new.lock --quiet
+        uv pip compile pyproject.toml --extra enterprise -o requirements-enterprise-new.lock --quiet
+
+    - name: Compare lock files
+      run: |
+        echo "Checking if lock files are up-to-date..."
+
+        if ! diff requirements.lock requirements-new.lock > /dev/null 2>&1; then
+          echo "❌ requirements.lock is out of date"
+          echo "Run: ./scripts/update_lockfiles.sh"
+          exit 1
+        fi
+
+        if ! diff requirements-all.lock requirements-all-new.lock > /dev/null 2>&1; then
+          echo "❌ requirements-all.lock is out of date"
+          echo "Run: ./scripts/update_lockfiles.sh"
+          exit 1
+        fi
+
+        if ! diff requirements-enterprise.lock requirements-enterprise-new.lock > /dev/null 2>&1; then
+          echo "❌ requirements-enterprise.lock is out of date"
+          echo "Run: ./scripts/update_lockfiles.sh"
+          exit 1
+        fi
+
+        echo "✅ All lock files are up-to-date"
+
+    - name: Upload lock files for review
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: updated-lockfiles
+        path: requirements*-new.lock
+        retention-days: 7
